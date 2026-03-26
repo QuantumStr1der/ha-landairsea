@@ -1,0 +1,11 @@
+{
+  "domain": "land_air_sea",
+  "name": "LandAirSea GPS Tracking",
+  "codeowners": ["@QuantumStr1der"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/QuantumStr1der/ha-landairsea",
+  "iot_class": "cloud_polling",
+  "requirements": ["aiohttp>=3.8.0"],
+  "version": "1.0.0"
+}
