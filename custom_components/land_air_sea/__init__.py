@@ -12,7 +12,7 @@ from .api import LandAirSeaAPI
 _LOGGER = logging.getLogger(__name__)
 
 # We will create a device tracker (for the map) and standard sensors (for battery/speed)
-PLATFORMS = ["device_tracker", "sensor"]
+PLATFORMS = ["device_tracker", "sensor", "binary_sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up LandAirSea from a UI config entry."""

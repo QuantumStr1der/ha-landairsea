@@ -87,7 +87,8 @@ class LandAirSeaAPI:
                             "heading": props.get("hdg", 0),
                             "address": props.get("addy", ""),
                             "last_updated": props.get("date", ""),
-                            "is_wired": props.get("wired", False)
+                            "is_wired": props.get("wired", False),
+                            "elevation": props.get("elev", 0.0)
                         }
                         parsed_vehicles.append(vehicle_data)
                         

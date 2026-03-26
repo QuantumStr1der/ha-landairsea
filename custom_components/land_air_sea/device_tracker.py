@@ -42,6 +42,16 @@ class LandAirSeaTracker(CoordinatorEntity, TrackerEntity):
         return self._vehicle_data.get("name", "LandAirSea Vehicle")
 
     @property
+    def extra_state_attributes(self):
+        """Return extra details when you click the map pin."""
+        return {
+            "address": self._vehicle_data.get("address"),
+            "elevation": self._vehicle_data.get("elevation"),
+            "last_updated": self._vehicle_data.get("last_updated"),
+            "is_wired": self._vehicle_data.get("is_wired"),
+        }
+
+    @property
     def latitude(self):
         """Return latitude value."""
         return self._vehicle_data.get("latitude")
@@ -65,3 +75,12 @@ class LandAirSeaTracker(CoordinatorEntity, TrackerEntity):
     def icon(self):
         """Return the icon to use in the frontend."""
         return "mdi:car"
+
+    @property
+    def device_info(self):
+        """Link this tracker to the main vehicle device."""
+        return {
+            "identifiers": {(DOMAIN, self.vehicle_id)},
+            "name": self._vehicle_data.get("name", "LandAirSea Vehicle"),
+            "manufacturer": "LandAirSea",
+        }

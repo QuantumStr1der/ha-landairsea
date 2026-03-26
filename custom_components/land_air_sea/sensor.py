@@ -17,6 +17,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for vehicle in coordinator.data:
         entities.append(LandAirSeaBatterySensor(coordinator, vehicle["id"]))
         entities.append(LandAirSeaSpeedSensor(coordinator, vehicle["id"]))
+        entities.append(LandAirSeaAddressSensor(coordinator, vehicle["id"]))
+        entities.append(LandAirSeaElevationSensor(coordinator, vehicle["id"]))
+        entities.append(LandAirSeaLastUpdatedSensor(coordinator, vehicle["id"]))
 
     async_add_entities(entities)
 
@@ -100,3 +103,35 @@ class LandAirSeaSpeedSensor(LandAirSeaBaseSensor):
     @property
     def native_unit_of_measurement(self):
         return UnitOfSpeed.MILES_PER_HOUR
+
+class LandAirSeaAddressSensor(LandAirSeaBaseSensor):
+    @property
+    def unique_id(self): return f"{self.vehicle_id}_address"
+    @property
+    def name(self): return f"{self._vehicle_data.get('name', 'Vehicle')} Address"
+    @property
+    def native_value(self): return self._vehicle_data.get("address")
+    @property
+    def icon(self): return "mdi:map-marker"
+
+class LandAirSeaElevationSensor(LandAirSeaBaseSensor):
+    @property
+    def unique_id(self): return f"{self.vehicle_id}_elevation"
+    @property
+    def name(self): return f"{self._vehicle_data.get('name', 'Vehicle')} Elevation"
+    @property
+    def native_value(self): return self._vehicle_data.get("elevation")
+    @property
+    def device_class(self): return SensorDeviceClass.DISTANCE
+    @property
+    def native_unit_of_measurement(self): return "ft"
+
+class LandAirSeaLastUpdatedSensor(LandAirSeaBaseSensor):
+    @property
+    def unique_id(self): return f"{self.vehicle_id}_last_updated"
+    @property
+    def name(self): return f"{self._vehicle_data.get('name', 'Vehicle')} Last Updated"
+    @property
+    def native_value(self): return self._vehicle_data.get("last_updated")
+    @property
+    def icon(self): return "mdi:clock-outline"
