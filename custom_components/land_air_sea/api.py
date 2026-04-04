@@ -44,10 +44,9 @@ class LandAirSeaAPI:
             return False
 
     async def get_vehicles(self):
-        """Fetch the latest GeoJSON data for all tracked vehicles."""
+        """Fetch the latest GeoJSON data, re-authenticating automatically if the session expires."""
         if not self.session:
-            _LOGGER.error("Session not initialized. Call login() first.")
-            return []
+            await self.login()
 
         timestamp = int(time.time() * 1000)
         data_url = f"{self.base_url}/geojson.aspx?action=scinit&_={timestamp}"
@@ -58,45 +57,64 @@ class LandAirSeaAPI:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/146.0.0.0",
         }
 
-        try:
-            async with self.session.get(data_url, headers=headers) as response:
-                if response.status != 200:
-                    _LOGGER.error(f"Failed to fetch vehicle data. HTTP Status: {response.status}")
-                    return []
+        async def _attempt_fetch():
+            """Helper function to perform the actual web request."""
+            try:
+                async with self.session.get(data_url, headers=headers, allow_redirects=False) as response:
+                    if response.status in (302, 303, 401, 403):
+                        return None
+                    
+                    if response.status != 200:
+                        _LOGGER.error(f"Failed to fetch vehicle data. HTTP Status: {response.status}")
+                        return []
+                    
+                    try:
+                        return await response.json(content_type=None)
+                    except Exception:
+                        return None 
+            except Exception as e:
+                _LOGGER.error(f"Connection error during fetch: {e}")
+                return []
 
-                raw_data = await response.json(content_type=None) # content_type=None forces parsing even if the server headers are weird
-                
-                parsed_vehicles = []
-                
-                if "features" in raw_data:
-                    for feature in raw_data["features"]:
-                        props = feature.get("properties", {})
-                        geom = feature.get("geometry", {})
-                        
-                        coords = geom.get("coordinates", [0.0, 0.0])
-                        longitude = coords[0]
-                        latitude = coords[1]
-                        
-                        vehicle_data = {
-                            "id": feature.get("id"),
-                            "name": props.get("name", "Unknown Vehicle"),
-                            "latitude": latitude,
-                            "longitude": longitude,
-                            "battery": props.get("batt", 0),
-                            "speed": props.get("spd", 0),
-                            "heading": props.get("hdg", 0),
-                            "address": props.get("addy", ""),
-                            "last_updated": props.get("date", ""),
-                            "is_wired": props.get("wired", False),
-                            "elevation": props.get("elev", 0.0)
-                        }
-                        parsed_vehicles.append(vehicle_data)
-                        
-                return parsed_vehicles
+        raw_data = await _attempt_fetch()
+        
+        if raw_data is None:
+            _LOGGER.info("LandAirSea session expired or invalid. Attempting to re-authenticate...")
+            login_success = await self.login()
+            
+            if login_success:
+                raw_data = await _attempt_fetch()
+            
+            if not raw_data:
+                _LOGGER.error("Failed to fetch data even after re-authenticating.")
+                return []
 
-        except Exception as e:
-            _LOGGER.error(f"Error fetching vehicle data: {e}")
-            return []
+        parsed_vehicles = []
+        if "features" in raw_data:
+            for feature in raw_data["features"]:
+                props = feature.get("properties", {})
+                geom = feature.get("geometry", {})
+                
+                coords = geom.get("coordinates", [0.0, 0.0])
+                longitude = coords[0]
+                latitude = coords[1]
+                
+                vehicle_data = {
+                    "id": feature.get("id"),
+                    "name": props.get("name", "Unknown Vehicle"),
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "battery": props.get("batt", 0),
+                    "speed": props.get("spd", 0),
+                    "heading": props.get("hdg", 0),
+                    "address": props.get("addy", ""),
+                    "last_updated": props.get("date", ""),
+                    "is_wired": props.get("wired", False),
+                    "elevation": props.get("elev", 0.0)
+                }
+                parsed_vehicles.append(vehicle_data)
+                
+        return parsed_vehicles
 
     async def close(self):
         """Close the session."""
