@@ -21,14 +21,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await api.login()
 
     async def async_update_data():
-        """Fetch the latest GPS data from the API."""
-        try:
+            """Fetch the latest GPS data from the API."""
             vehicles = await api.get_vehicles()
+            
             if not vehicles:
-                raise UpdateFailed("No vehicles returned from API")
+                _LOGGER.warning("LandAirSea API returned empty data (device waking up or session conflict). Keeping last known state.")
+                return coordinator.data if coordinator.data else []
+                
             return vehicles
-        except Exception as err:
-            raise UpdateFailed(f"Error communicating with API: {err}")
 
     coordinator = DataUpdateCoordinator(
         hass,
