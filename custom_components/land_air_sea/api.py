@@ -78,16 +78,24 @@ class LandAirSeaAPI:
 
         raw_data = await _attempt_fetch()
         
-        if raw_data is None:
-            _LOGGER.info("LandAirSea session expired or invalid. Attempting to re-authenticate...")
+        has_valid_data = raw_data and isinstance(raw_data, dict) and raw_data.get("features")
+        
+        if not has_valid_data:
+            _LOGGER.info("Session returned empty payload. Forcing hard re-authentication...")
+            
+            if self.session:
+                await self.session.close()
+                self.session = None
+                
             login_success = await self.login()
             
             if login_success:
                 raw_data = await _attempt_fetch()
             
-            if not raw_data:
-                _LOGGER.error("Failed to fetch data even after re-authenticating.")
+            if not raw_data or not isinstance(raw_data, dict) or not raw_data.get("features"):
+                _LOGGER.error("Failed to fetch data even after hard re-authenticating.")
                 return []
+
 
         parsed_vehicles = []
         if "features" in raw_data:
